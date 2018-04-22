@@ -9,14 +9,51 @@ import           Control.Arrow                  ( (>>>)
                                                 , (<<<)
                                                 )
 import           Lib
+
 -- | this here is really fix, `Fix f = f (Fix f)`
 newtype Term f = In {out :: f (Term f)} -- ^ this is just fix, really
+
+-- | I mean, litterally, this fix.
+newtype Fix f = Fix (f (Fix f))
+
+-- | with the traditional
+unFix :: Fix f -> f (Fix f)
+unFix (Fix f) = f
 
 -- | an algebra is just `f a -> a`
 type Algebra f a = f a -> a -- ^ like this
 
+-- | a CoAlgebra is just a __coAlgebra__
 type CoAlgebra f a = a -> f a
 
+ {-/ 
+ a catamorphisms takes an algebra (arbitrary!) and returns a 
+ function that knows how to evaluate a recursive structure (by way of fix)
+ down to just a value `a` 
+ -}
+cata :: Functor f => Algebra f a -> (Term f -> a)
+cata fn = -- this could be pointfree
+      out  -- unpack 
+            >>> fmap (cata fn)  -- recurse
+            >>> fn -- apply
+
+ana :: Functor f => CoAlgebra f a -> (a -> Term f)
+ana fn = --this could be pointfree too, and <<< === .
+      In -- pack! 
+            <<< fmap (ana fn) -- recurse
+            <<< fn -- apply
+
+-- | this is, in other words, a simple algebra over Expr where the carrier type is Int
+countNodes :: Algebra Expr Int  
+countNodes (Unary _ arg        ) = arg + 1
+countNodes (Binary left _ right) = left + right + 1
+countNodes (Call  fn args      ) = fn + sum args + 1
+countNodes (Index it idx       ) = it + idx + 1
+countNodes (Paren   arg        ) = arg + 1
+countNodes (Literal _          ) = 1
+countNodes (Ident   _          ) = 1
+
+-- | the carrier type can be even more fancy things
 prettyPrint :: Algebra Expr Doc -- Expr Doc -> Doc
 prettyPrint (Literal i     ) = P.int i
 prettyPrint (Ident   s     ) = P.text s
@@ -40,26 +77,7 @@ bottomUp fn = out >>> fmap (bottomUp fn) >>> In >>> fn
 topDown :: Functor a => (Term a -> Term a) -> Term a -> Term a
 topDown fn = In <<< fmap (topDown fn) <<< out <<< fn
 
-cata :: Functor f => Algebra f a -> (Term f -> a)
-cata fn = -- this could be pointfree
-      out  -- unpack 
-            >>> fmap (cata fn)  -- recurse
-            >>> fn -- apply
 
-ana :: Functor f => CoAlgebra f a -> (a -> Term f)
-ana fn = --this could be pointfree too, and <<< === .
-      In -- pack! 
-            <<< fmap (ana fn) -- recurse
-            <<< fn -- apply
-
-countNodes :: Algebra Expr Int
-countNodes (Unary _ arg        ) = arg + 1
-countNodes (Binary left _ right) = left + right + 1
-countNodes (Call  fn args      ) = fn + sum args + 1
-countNodes (Index it idx       ) = it + idx + 1
-countNodes (Paren   arg        ) = arg + 1
-countNodes (Literal _          ) = 1
-countNodes (Ident   _          ) = 1
 
 
 
