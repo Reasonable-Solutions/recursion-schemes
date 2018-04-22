@@ -8,16 +8,7 @@ import           Data.Foldable                  ( )
 import           Control.Arrow                  ( (>>>)
                                                 , (<<<)
                                                 )
-data Expr a
-      = Literal { intVal :: Int}
-      | Ident   { name :: String}
-      | Index   { target :: a, idx :: a }
-      | Unary   { op :: String, target :: a }
-      | Binary  { lhs :: a, op :: String, rhs :: a }
-      | Call    { func :: a, args :: [a] }
-      | Paren   { target :: a }
-      deriving (Show, Eq, Functor)
-
+import           Lib
 -- | this here is really fix, `Fix f = f (Fix f)`
 newtype Term f = In {out :: f (Term f)} -- ^ this is just fix, really
 
@@ -69,6 +60,7 @@ countNodes (Index it idx       ) = it + idx + 1
 countNodes (Paren   arg        ) = arg + 1
 countNodes (Literal _          ) = 1
 countNodes (Ident   _          ) = 1
+
 
 
 
