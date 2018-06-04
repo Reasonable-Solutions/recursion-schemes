@@ -40,8 +40,8 @@ cata fn = -- this could be pointfree with >>> === flip .
 ana :: Functor f => CoAlgebra f a -> (a -> Term f)
 ana fn = --this could be pointfree too, and <<< === .
       In -- pack! 
-            . fmap (ana fn) -- recurse
-            . fn -- apply
+            <<< fmap (ana fn) -- recurse
+            <<< fn -- apply
 
 -- this is, in other words, a simple algebra over Expr where the carrier type is Int
 countNodes :: Algebra Expr Int  
@@ -63,19 +63,21 @@ prettyPrint (Binary l op r ) = l <> P.text op <> r
 prettyPrint (Call fn args  ) = fn <> P.parens (P.cat (P.punctuate (P.text ", ") args))
 prettyPrint (Paren exp     ) = P.parens exp
 
--- evaluate :: Algebra Expr Int  -- Expre Int -> Int
--- evaluate (Literal i) = i
--- evaluate (Ident s) = s
--- evaluate (Index it index) = it !! index
--- evaluate (Unary op it) = op it
--- evaluate (Binary l op r) = l op r
--- evaluate (Call fn args) = fn args
--- evaluate (Paren exp) = exp
+
+-- tooo: stop faking
+evaluate :: Algebra Expr Int  -- Expre Int -> Int
+evaluate (Literal i) = i
+evaluate (Ident s) = undefined -- String
+evaluate (Index it index) = undefined -- index access
+evaluate (Unary op it) = -it
+evaluate (Binary l op r) = l + r
+evaluate (Call fn args) = foldl (+) 0 args
+evaluate (Paren exp) = exp
 
 ten, add, call :: Term Expr
 ten = In Literal {intVal = 10}
 add = In Ident {name = "add"}
-call = In Call {func = add, args = [ten, ten]}
+call = In Call {func = add, args = [ten, ten, ten]}
 
 
 -- e.g ``` cata prettyPrint call ```
